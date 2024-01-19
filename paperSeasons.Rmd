@@ -1,0 +1,864 @@
+---
+title: "Differences in the mental health status, emotional regulation, and impulsivity traits in emerging adults from Argentina based on seasonal light variations"
+author: "Dr. Lorena Cecilia López Steinmetz, PhD"
+date: "09/09/2023"
+output: html_document
+---
+
+## Note
+
+This R code and the dataset corresponds to the paper entitled "Differences in the mental health status, emotional regulation, and impulsivity traits in emerging adults from Argentina based on seasonal light variations", authored by:
+
+Lorena Cecilia López Steinmetz (1),(2)*, Candela Abigail Leyes (2), Maribel Eugenia Luque (1), Manuel Bruzzone (1), Juan Carlos Godoy (1)
+
+(1) Instituto de Investigaciones Psicológicas (IIPsi), Facultad de Psicología, Universidad Nacional de Córdoba (UNC), Consejo Nacional de Investigaciones Científicas y Técnicas (CONICET), Córdoba, Argentina.
+
+(2) Decanato de Ciencias Sociales, Universidad Siglo 21, Córdoba, Argentina.
+
+* Corresponding author: Dr. Lorena Cecilia López Steinmetz, PhD. Laboratorio de Psicología, Instituto de Investigaciones Psicológicas (IIPsi), Facultad de Psicología, Universidad Nacional de Córdoba (UNC), Consejo Nacional de Investigaciones Científicas y Técnicas (CONICET). Boulevard de La Reforma and Enfermera Gordillo, s/n, 2nd floor. Córdoba, Argentina. Zip Code: 5000. Email: cecilialopezsteinmetz@unc.edu.ar 
+
+
+
+## Data: Time 1
+
+Load the dataset
+
+
+```{r echo=TRUE, warning=FALSE}
+# install.packages("openxlsx")
+
+library(readxl)
+
+results_survey339868_3_T1 <- read_excel("C:/Users/stein/OneDrive/Escritorio/results-survey_dataset.xlsx", sheet = 1)
+
+# Check the structure of the data
+str(results_survey339868_3_T1)
+```
+
+#### Dataset
+
+Verifying the correct upload of the dataset.
+
+```{r, echo=TRUE}
+dataset_t1 <- results_survey339868_3_T1
+
+# summary(dataset_t1)
+
+names(dataset_t1)
+```
+
+
+Select variables to be used in the analysis
+
+```{r , echo=TRUE}
+selected_vars_t1 <- dataset_t1[, c("6. ¿En qué provincia vivís actualmente?",
+                             "7. ¿Cuál es tu sexo biológico?:",
+                             "8. ¿Cuál es tu identidad de género?:",
+                             "8. ¿Cuál es tu identidad de género?:   [Otro]",
+                             "10. ¿Alguna vez un profesional de la salud (psicólogo/a, psiquiatra u otro/o médico/a) te diagnosticó algún problema de salud mental? (por ejemplo, depresión, trastorno de ansiedad o cualquier otro)",
+                             "11. ¿Alguna vez intentaste suicidarte?",
+                             "12. Sólo en caso de que hayas respondido sí a la pregunta anterior, ¿cuántas veces intentaste suicidarte? (completá sólo con números)",
+                             "¿Cuál de estas bebidas alcohólicas es la que consumís más frecuentemente?  Si tomás otra bebida que no está en la lista, indicá la opción de la lista que sea la más parecida a la bebida que vos tomás.",
+                             "Teniendo en cuenta la bebida alcohólica que indicaste que consumís más frecuentemente:   ¿cuántos vasos, copas, latas o medidas (según corresponda en la imagen) de esa bebida acostumbrás a tomar generalmente en una misma ocasión?  Tené en cuenta que en “una misma ocasión” significa en una misma salida, una misma tarde o noche o en una misma juntada.  Respondé con la cantidad que tomás generalmente, la mayoría de las veces.  Si nunca tomás alcohol respondé 0.",
+                             "Cualquiera sea la bebida alcohólica que tomás, durante el último mes, ¿tomaste alcohol hasta emborracharte?",
+                             "¿A qué edad aproximadamente probaste por primera vez alguna bebida alcohólica?  Si nunca tomaste alcohol respondé 0.",
+                             "BYAACQ",
+                             "DEPRBECK",
+                             "STAIRASGO",
+                             "POSURG", 
+                             "NEGURG",
+                             "PERSEVLACK",
+                             "PREMEDLACK",
+                             "SENSSEEK",
+                             "ISOSUIC",
+                             "DERSAFECTONEG",
+                             "DERSAFECTOPOSIT")]
+```
+
+
+
+Create a new dataset with selected variables and show a summary of it
+
+
+```{r , echo=TRUE}
+data_t1 <- data.frame(selected_vars_t1)
+
+summary(data_t1)
+```
+
+
+**Create the variable "Regions"**
+
+Create the variable "regions" by grouping provinces located on the north, center, and south of the country.
+
+
+```{r , echo=TRUE}
+data_t1$region<-data_t1$X6...En.qué.provincia.vivís.actualmente.
+
+table(data_t1$region)
+
+# Create a new variable "factor_region" with grouped categories
+data_t1$factor_region <- ifelse(data_t1$region %in% c("JUJ", "SAL", "TUC", "CAT", "STGOE", "FORM", "CHAC", "CORRI", "MISIO"), 
+                             "north",
+                             ifelse(data_t1$region %in% c("LRIOJ", "SJUAN", "MENDO", "CBA", "STAFE", "ENTRI", "LPAMP", "BA", "CABA"),
+                                    "center",
+                                    "south")) # "NEUQU", "RIONE", "CHUBU" , "STACR", "TDELF"
+
+
+# print(data_t1$factor_region) # Print the updated dataset
+
+summary(data_t1$factor_region)
+```
+
+
+Get the names of the variables in this dataset named "data_t1" and print out the variable names
+
+
+```{r , echo=TRUE}
+variable_names_t1 <- names(data_t1)
+
+print(variable_names_t1)
+```
+
+
+**Biological sex**
+
+(0 = male, 1 = female)
+
+```{r , echo=TRUE}
+# Get the table of counts
+sex_counts_t1 <- table(data_t1$X7...Cuál.es.tu.sexo.biológico..)
+
+# Print the results with labels
+cat("Male =", sex_counts_t1[1], "\n")
+cat("Female =", sex_counts_t1[2], "\n")
+
+
+# Get the table of percentages
+sex_perc_t1 <- prop.table(table(data_t1$X7...Cuál.es.tu.sexo.biológico..)) * 100
+
+# Print the results with labels
+cat("Male =", sex_perc_t1[1], "% \n")
+cat("Female =", sex_perc_t1[2], "% \n")
+```
+
+
+
+**Regions**
+
+```{r , echo=TRUE}
+table(data_t1$factor_region)
+
+prop.table(table(data_t1$factor_region)) * 100
+```
+
+
+**Suicidal behavior history**
+
+(0 = without suicidal behavior background, 1 = suicidal ideation history, 2 = suicide attempt history)
+
+
+```{r , echo=TRUE}
+table(data_t1$X11...Alguna.vez.intentaste.suicidarte.)
+
+prop.table(table(data_t1$X11...Alguna.vez.intentaste.suicidarte.)) * 100
+```
+
+
+**Mental disorder history** 
+
+(0 = no, 1 = yes)
+
+
+```{r , echo=TRUE}
+table(data_t1$X10...Alguna.vez.un.profesional.de.la.salud..psicólogo.a..psiquiatra.u.otro.o.médico.a..te.diagnosticó.algún.problema.de.salud.mental...por.ejemplo..depresión..trastorno.de.ansiedad.o.cualquier.otro.)
+
+prop.table(table(data_t1$X10...Alguna.vez.un.profesional.de.la.salud..psicólogo.a..psiquiatra.u.otro.o.médico.a..te.diagnosticó.algún.problema.de.salud.mental...por.ejemplo..depresión..trastorno.de.ansiedad.o.cualquier.otro.)) * 100
+```
+
+
+**Age of onset on alcohol consumption**
+
+(Never consumed alcohol = 0)
+
+```{r , echo=TRUE}
+table(data_t1$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+prop.table(table(data_t1$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)) * 100
+```
+
+
+
+```{r , echo=TRUE}
+summary(data_t1$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+mean(data_t1$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+sd(data_t1$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+range(data_t1$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+# Sort the values in ascending order
+sorted_age_of_onset_t1 <- sort(data_t1$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+# Display the sorted values
+sorted_age_of_onset_t1
+```
+
+
+**Drinking alcohol until get drunk during the last month**
+
+(0 = Never consumed alcohol, 1 = Yes, 2 = N0)
+
+```{r , echo=TRUE}
+table(data_t1$Cualquiera.sea.la.bebida.alcohólica.que.tomás..durante.el.último.mes...tomaste.alcohol.hasta.emborracharte.)
+
+prop.table(table(data_t1$Cualquiera.sea.la.bebida.alcohólica.que.tomás..durante.el.último.mes...tomaste.alcohol.hasta.emborracharte.)) * 100
+```
+
+
+**Negative consequences of alcohol consumption (BYAACQ)**
+
+```{r , echo=TRUE}
+mean(data_t1$BYAACQ)
+
+sd(data_t1$BYAACQ)
+
+range(data_t1$BYAACQ)
+```
+
+
+**Depression (BDI-II)**
+
+
+```{r , echo=TRUE}
+mean(data_t1$DEPRBECK)
+
+sd(data_t1$DEPRBECK)
+
+range(data_t1$DEPRBECK)
+```
+
+
+**Anxiety trait (STAI-T)**
+
+
+```{r , echo=TRUE}
+mean(data_t1$STAIRASGO)
+
+sd(data_t1$STAIRASGO)
+
+range(data_t1$STAIRASGO)
+```
+
+
+**Suicidal risk (ISO-30)**
+
+
+```{r , echo=TRUE}
+mean(data_t1$ISOSUIC)
+
+sd(data_t1$ISOSUIC)
+
+range(data_t1$ISOSUIC)
+```
+
+
+**Regulation of negative emotions (DERS-N)**
+
+
+```{r , echo=TRUE}
+mean(data_t1$DERSAFECTONEG)
+
+sd(data_t1$DERSAFECTONEG)
+
+range(data_t1$DERSAFECTONEG)
+```
+
+
+
+**Regulation of positive emotions (DERS-P)**
+
+
+```{r , echo=TRUE}
+mean(data_t1$DERSAFECTOPOSIT)
+
+sd(data_t1$DERSAFECTOPOSIT)
+
+range(data_t1$DERSAFECTOPOSIT)
+```
+
+
+**Impulsivity-related traits (UPPS-P)**
+
+
+**Negative urgency**
+
+
+```{r , echo=TRUE}
+mean(data_t1$NEGURG)
+
+sd(data_t1$NEGURG)
+
+range(data_t1$NEGURG)
+```
+
+
+**Positive urgency**
+
+
+```{r , echo=TRUE}
+mean(data_t1$POSURG)
+
+sd(data_t1$POSURG)
+
+range(data_t1$POSURG)
+```
+
+
+**Lack of perseverance**
+
+
+```{r , echo=TRUE}
+mean(data_t1$PERSEVLACK)
+
+sd(data_t1$PERSEVLACK)
+
+range(data_t1$PERSEVLACK)
+```
+
+
+**Lack of premeditation**
+
+
+```{r , echo=TRUE}
+mean(data_t1$PREMEDLACK)
+
+sd(data_t1$PREMEDLACK)
+
+range(data_t1$PREMEDLACK)
+```
+
+
+**Sensation seeking**
+
+
+```{r , echo=TRUE}
+mean(data_t1$SENSSEEK)
+
+sd(data_t1$SENSSEEK)
+
+range(data_t1$SENSSEEK)
+```
+
+
+
+
+## Data: Time 2
+
+Load the dataset
+
+```{r, echo=TRUE, warning=FALSE}
+# install.packages("openxlsx")
+
+library(readxl)
+
+results_survey339868_3_ <- read_excel("C:/Users/stein/OneDrive/Escritorio/results-survey_dataset.xlsx", sheet = 2)
+
+# Check the structure of the data
+str(results_survey339868_3_)
+```
+
+#### Dataset
+
+Verifying the correct upload of the dataset.
+
+```{r , echo=TRUE}
+dataset <- results_survey339868_3_
+
+# summary(dataset)
+
+names(dataset)
+```
+
+
+Select variables to be used in the analysis
+
+```{r , echo=TRUE}
+selected_vars <- dataset[, c("6. ¿En qué provincia vivís actualmente?",
+                             "7. ¿Cuál es tu sexo biológico?:",
+                             "8. ¿Cuál es tu identidad de género?:",
+                             "8. ¿Cuál es tu identidad de género?:   [Otro]",
+                             "10. ¿Alguna vez un profesional de la salud (psicólogo/a, psiquiatra u otro/o médico/a) te diagnosticó algún problema de salud mental? (por ejemplo, depresión, trastorno de ansiedad o cualquier otro)",
+                             "11. ¿Alguna vez intentaste suicidarte?",
+                             "12. Sólo en caso de que hayas respondido sí a la pregunta anterior, ¿cuántas veces intentaste suicidarte? (completá sólo con números)",
+                             "¿Cuál de estas bebidas alcohólicas es la que consumís más frecuentemente?  Si tomás otra bebida que no está en la lista, indicá la opción de la lista que sea la más parecida a la bebida que vos tomás.",
+                             "Teniendo en cuenta la bebida alcohólica que indicaste que consumís más frecuentemente:   ¿cuántos vasos, copas, latas o medidas (según corresponda en la imagen) de esa bebida acostumbrás a tomar generalmente en una misma ocasión?  Tené en cuenta que en “una misma ocasión” significa en una misma salida, una misma tarde o noche o en una misma juntada.  Respondé con la cantidad que tomás generalmente, la mayoría de las veces.  Si nunca tomás alcohol respondé 0.",
+                             "Cualquiera sea la bebida alcohólica que tomás, durante el último mes, ¿tomaste alcohol hasta emborracharte?",
+                             "¿A qué edad aproximadamente probaste por primera vez alguna bebida alcohólica?  Si nunca tomaste alcohol respondé 0.",
+                             "BYAACQ",
+                             "DEPRBECK",
+                             "STAIRASGO",
+                             "POSURG", 
+                             "NEGURG",
+                             "PERSEVLACK",
+                             "PREMEDLACK",
+                             "SENSSEEK",
+                             "ISOSUIC",
+                             "DERSAFECTONEG",
+                             "DERSAFECTOPOSIT")] 
+```
+
+
+
+Create a new dataset with selected variables and show a summary of it
+
+
+```{r , echo=TRUE}
+data <- data.frame(selected_vars)
+
+summary(data)
+```
+
+
+**Create the variable "Regions"**
+
+Create the variable "regions" by grouping provinces located on the north, center, and south of the country.
+
+
+```{r , echo=TRUE}
+data$region<-data$X6...En.qué.provincia.vivís.actualmente.
+
+table(data$region)
+
+# Create a new variable "factor_region" with grouped categories
+data$factor_region <- ifelse(data$region %in% c("JUJ", "SAL", "TUC", "CAT", "STGOE", "FORM", "CHAC", "CORRI", "MISIO"), 
+                             "north",
+                             ifelse(data$region %in% c("LRIOJ", "SJUAN", "MENDO", "CBA", "STAFE", "ENTRI", "LPAMP", "BA", "CABA"),
+                                    "center",
+                                    "south")) # "NEUQU", "RIONE", "CHUBU" , "STACR", "TDELF"
+
+# Print the updated dataset
+# print(data$factor_region)
+
+summary(data$factor_region)
+```
+
+
+Get the names of the variables in this dataset named "data" and print out the variable names
+
+
+```{r , echo=TRUE}
+variable_names <- names(data)
+
+print(variable_names)
+```
+
+
+
+**Percentage of attrition from T1 (N = 1184) to T2 (N = 490)**
+
+```{r , echo=TRUE}
+# Number of participants at T1 and T2
+participants_t1 <- 1184
+participants_t2 <- 490
+
+# Calculate the percentage of desertion
+desertion_percentage <- ((participants_t1 - participants_t2) / participants_t1) * 100
+
+# Print the result
+cat("Percentage of participants' attrition from T1 to T2:", desertion_percentage, "%\n")
+```
+
+
+**Biological sex**
+
+(0 = male, 1 = female)
+
+```{r , echo=TRUE}
+# Get the table of counts
+sex_counts <- table(data$X7...Cuál.es.tu.sexo.biológico..)
+
+# Print the results with labels
+cat("Male =", sex_counts[1], "\n")
+cat("Female =", sex_counts[2], "\n")
+
+
+# Get the table of percentages
+sex_perc <- prop.table(table(data$X7...Cuál.es.tu.sexo.biológico..)) * 100
+
+# Print the results with labels
+cat("Male =", sex_perc[1], "% \n")
+cat("Female =", sex_perc[2], "% \n")
+```
+
+
+
+**Regions**
+
+```{r , echo=TRUE}
+table(data$factor_region)
+
+prop.table(table(data$factor_region)) * 100
+```
+
+
+**Suicidal behavior history**
+
+(0 = without suicidal behavior background, 1 = suicidal ideation history, 2 = suicide attempt history)
+
+
+```{r , echo=TRUE}
+table(data$X11...Alguna.vez.intentaste.suicidarte.)
+
+prop.table(table(data$X11...Alguna.vez.intentaste.suicidarte.)) * 100
+```
+
+
+**Mental disorder history** 
+
+(0 = no, 1 = yes)
+
+
+```{r , echo=TRUE}
+table(data$X10...Alguna.vez.un.profesional.de.la.salud..psicólogo.a..psiquiatra.u.otro.o.médico.a..te.diagnosticó.algún.problema.de.salud.mental...por.ejemplo..depresión..trastorno.de.ansiedad.o.cualquier.otro.)
+
+prop.table(table(data$X10...Alguna.vez.un.profesional.de.la.salud..psicólogo.a..psiquiatra.u.otro.o.médico.a..te.diagnosticó.algún.problema.de.salud.mental...por.ejemplo..depresión..trastorno.de.ansiedad.o.cualquier.otro.)) * 100
+```
+
+
+**Age of onset on alcohol consumption**
+
+(Never consumed alcohol = 0)
+
+```{r , echo=TRUE}
+summary(data$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+mean(data$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+sd(data$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+range(data$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+# Sort the values in ascending order
+sorted_age_of_onset_t2 <- sort(data$X.A.qué.edad.aproximadamente.probaste.por.primera.vez.alguna.bebida.alcohólica...Si.nunca.tomaste.alcohol.respondé.0.)
+
+# Display the sorted values
+sorted_age_of_onset_t2
+```
+
+
+**Drinking alcohol until get drunk during the last month**
+
+(0 = Never consumed alcohol, 1 = Yes, 2 = N0)
+
+```{r , echo=TRUE}
+table(data$Cualquiera.sea.la.bebida.alcohólica.que.tomás..durante.el.último.mes...tomaste.alcohol.hasta.emborracharte.)
+
+prop.table(table(data$Cualquiera.sea.la.bebida.alcohólica.que.tomás..durante.el.último.mes...tomaste.alcohol.hasta.emborracharte.)) * 100
+```
+
+
+**Negative consequences of alcohol consumption (BYAACQ)**
+
+
+```{r , echo=TRUE}
+mean(data$BYAACQ)
+
+sd(data$BYAACQ)
+
+range(data$BYAACQ)
+```
+
+
+**Depression (BDI-II)**
+
+
+```{r , echo=TRUE}
+mean(data$DEPRBECK)
+
+sd(data$DEPRBECK)
+
+range(data$DEPRBECK)
+```
+
+
+**Anxiety trait (STAI-T)**
+
+
+```{r , echo=TRUE}
+mean(data$STAIRASGO)
+
+sd(data$STAIRASGO)
+
+range(data$STAIRASGO)
+```
+
+
+**Suicidal risk (ISO-30)**
+
+
+```{r , echo=TRUE}
+mean(data$ISOSUIC)
+
+sd(data$ISOSUIC)
+
+range(data$ISOSUIC)
+```
+
+
+**Regulation of negative emotions (DERS-N)**
+
+
+```{r , echo=TRUE}
+mean(data$DERSAFECTONEG)
+
+sd(data$DERSAFECTONEG)
+
+range(data$DERSAFECTONEG)
+```
+
+
+**Regulation of positive emotions (DERS-P)**
+
+
+```{r , echo=TRUE}
+mean(data$DERSAFECTOPOSIT)
+
+sd(data$DERSAFECTOPOSIT)
+
+range(data$DERSAFECTOPOSIT)
+```
+
+
+**Impulsivity-related traits (UPPS-P)**
+
+
+**Negative urgency**
+
+
+```{r , echo=TRUE}
+mean(data$NEGURG)
+
+sd(data$NEGURG)
+
+range(data$NEGURG)
+```
+
+
+**Positive urgency**
+
+
+```{r , echo=TRUE}
+mean(data$POSURG)
+
+sd(data$POSURG)
+
+range(data$POSURG)
+```
+
+
+**Lack of perseverance**
+
+
+```{r , echo=TRUE}
+mean(data$PERSEVLACK)
+
+sd(data$PERSEVLACK)
+
+range(data$PERSEVLACK)
+```
+
+
+**Lack of premeditation**
+
+
+```{r , echo=TRUE}
+mean(data$PREMEDLACK)
+
+sd(data$PREMEDLACK)
+
+range(data$PREMEDLACK)
+```
+
+
+**Sensation seeking**
+
+
+```{r , echo=TRUE}
+mean(data$SENSSEEK)
+
+sd(data$SENSSEEK)
+
+range(data$SENSSEEK)
+```
+
+
+
+
+## Data: Time 1 and Time 2
+
+Load the dataset
+
+```{r, echo=TRUE, warning=FALSE}
+# install.packages("openxlsx")
+
+library(readxl)
+
+data_t1_t2 <- read_excel("C:/Users/stein/OneDrive/Escritorio/results-survey_dataset.xlsx", sheet = 3)
+
+# Check the structure of the data
+str(data_t1_t2)
+```
+
+
+```{r , echo=TRUE}
+names(data_t1_t2)
+```
+
+
+Select variables to be used in the analysis
+
+
+```{r , echo=TRUE}
+data_t1_t2 <- data_t1_t2[, c("groups",
+                             "BYAACQ",
+                             "DEPRBECK",
+                             "STAIRASGO",
+                             "POSURG", 
+                             "NEGURG",
+                             "PERSEVLACK",
+                             "PREMEDLACK",
+                             "SENSSEEK",
+                             "ISOSUIC",
+                             "DERSAFECTONEG",
+                             "DERSAFECTOPOSIT")] 
+```
+
+
+```{r , echo=TRUE}
+summary(data_t1_t2)
+```
+
+
+
+
+**Testing differences between groups (not paired samples) for each variable**
+
+
+```{r , echo=TRUE, warning=FALSE}
+# List of variable names for which to calculate differences and perform tests
+variable_names_t1_t2 <- c("BYAACQ", "DEPRBECK", "STAIRASGO", "ISOSUIC", "DERSAFECTONEG", "DERSAFECTOPOSIT", "NEGURG", "POSURG", "PERSEVLACK", "PREMEDLACK", "SENSSEEK") 
+```
+
+
+```{r message=FALSE, warning=FALSE, , echo=TRUE}
+library(dplyr)
+library(purrr)
+
+# Function to perform Wilcoxon rank-sum test
+perform_wilcox_rank_sum_test <- function(variable) {
+  group1_data <- data_t1_t2 %>%
+    filter(groups == "a") %>%
+    pull(!!sym(variable))
+  
+  group2_data <- data_t1_t2 %>%
+    filter(groups == "b") %>%
+    pull(!!sym(variable))
+  
+  # Check for non-missing observations
+  if (sum(!is.na(group1_data)) > 0 && sum(!is.na(group2_data)) > 0) {
+    wilcox_test_result <- wilcox.test(group1_data, group2_data, alternative = "two.sided")
+    
+    # Output test statistic in the results
+    result <- list(
+      Variable = variable,
+      Statistic = wilcox_test_result$statistic,
+      P_Value = wilcox_test_result$p.value
+    )
+    
+    return(result)
+  } else {
+    cat("Variable:", variable, "has missing or insufficient data. Skipping...\n")
+    return(NULL)
+  }
+}
+
+# Perform Wilcoxon rank-sum test for each variable
+test_results <- map(variable_names_t1_t2, perform_wilcox_rank_sum_test)
+
+# Print the test results
+for (i in seq_along(test_results)) {
+  if (!is.null(test_results[[i]])) {
+    cat("Variable:", test_results[[i]]$Variable, "\n")
+    cat("Statistic:", test_results[[i]]$Statistic, "\n")
+    cat("P-value:", test_results[[i]]$P_Value, "\n\n")
+  }
+}
+```
+
+
+This plot is exclusively for visualizing significant results:
+
+
+```{r message=FALSE, warning=FALSE, , echo=TRUE}
+library(ggplot2)
+library(gridExtra)
+
+# Create a list to store plots
+plot_list <- list()
+
+# Create plots for significant variables
+for (var_name in variable_names_t1_t2) {
+  group1_data <- data_t1_t2 %>%
+    filter(groups == "a") %>%
+    pull(!!sym(var_name))
+  
+  group2_data <- data_t1_t2 %>%
+    filter(groups == "b") %>%
+    pull(!!sym(var_name))
+  
+  # Check for non-missing observations
+  if (sum(!is.na(group1_data)) > 0 && sum(!is.na(group2_data)) > 0) {
+    p_value <- wilcox.test(group1_data, group2_data, alternative = "two.sided")$p.value
+    
+    # Create a box plot if p-value is significant (e.g., < 0.05)
+    if (p_value < 0.05) {
+      # Truncate the longer group to match the length of the shorter group
+      min_length <- min(length(group1_data), length(group2_data))
+      group1_data <- group1_data[1:min_length]
+      group2_data <- group2_data[1:min_length]
+      
+      plot_title <- paste("Comparison of", var_name, "(p-value:", p_value, ")")
+      data_for_plot <- data.frame(Value = c(group1_data, group2_data),
+                                  Group = factor(rep(c("Group a", "Group b"), each = min_length)))
+      
+      current_plot <- ggplot(data_for_plot, aes(x = Group, y = Value, fill = Group)) +
+  geom_boxplot() +
+  ggtitle(plot_title) +
+  theme(plot.title = element_text(size = 8))  # Adjust the size as needed
+
+      
+      plot_list[[var_name]] <- current_plot
+    }
+  }
+}
+
+# Arrange and display the plots
+grid.arrange(grobs = plot_list, ncol = 2)  # Adjust ncol as needed
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
